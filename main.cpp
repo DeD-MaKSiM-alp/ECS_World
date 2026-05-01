@@ -120,34 +120,43 @@ struct World
 Получает ключ-порядковый номер сущности
 Получает позицию и скорость
 И если скорость не равна пустому указателю - изменить позицию сущности.
+!! ВАЖНО !! Сделать функционал таким образом, чтобы по дефолту, если у сущности есть
+компонент Velocity, то есть и компонент Position.
 */
 void MovementSystem::update(World& world)
 {
 
-    for (auto& pair : world.positions)
+    for (auto& pair : world.velocities)
     {
         int entity = pair.first;
-        Position& position = pair.second;
-        Velocity* velocity = world.getVelocity(entity);
+        Velocity& velocity = pair.second;
+        Position* position = world.getPosition(entity);
 
-        if (velocity != nullptr)
+        if (position != nullptr)
         {
-            position.x += velocity->x;
-            position.y += velocity->y;
+            position->x += velocity.x;
+            position->y += velocity.y;
         }
     }
 }
 
+
 int main()
 {
+    /*Создается мир*/
     World world;
 
+    /*Создается пробная сущность*/
     int entity = world.createEntity();
+
+    /*Добавили к созданной сущности компоненты*/
     world.addPosition(entity, Position{0.0f, 0.0f});
     world.addVelocity(entity, Velocity{1.0f, 2.0f});
 
+    /*Пробное обновление мира*/
     world.update();
 
+    /*Получили позицию для проверки обновления мира*/
     Position* position = world.getPosition(entity);
     if (position != nullptr)
     {

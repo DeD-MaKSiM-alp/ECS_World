@@ -1,28 +1,37 @@
 {
-    "tasks": [
-        {
-            "type": "cppbuild",
-            "label": "C/C++: g++.exe сборка активного файла",
-            "command": "C:\\Users\\maxle\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT.LLVM_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\g++.exe",
-            "args": [
-                "-fdiagnostics-color=always",
-                "-g",
-                "${file}",
-                "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe"
-            ],
-            "options": {
-                "cwd": "${fileDirname}"
-            },
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "detail": "Задача создана отладчиком."
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build main.cpp (MSVC)",
+      "type": "process",
+      "command": "${workspaceFolder}\\.vscode\\build_msvc.bat",
+      "args": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [
+        "$msCompile"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Clean build artifacts",
+      "type": "shell",
+      "command": "del /f /q \"${workspaceFolder}\\main.exe\" \"${workspaceFolder}\\main.obj\" \"${workspaceFolder}\\main.pdb\" \"${workspaceFolder}\\main.ilk\" \"${workspaceFolder}\\vc140.pdb\" 2>nul",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "C:\\Windows\\System32\\cmd.exe",
+          "args": [
+            "/d",
+            "/c"
+          ]
         }
-    ],
-    "version": "2.0.0"
+      },
+      "problemMatcher": []
+    }
+  ]
 }
