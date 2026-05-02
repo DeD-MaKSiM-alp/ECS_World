@@ -4,6 +4,8 @@
 #include "Components.h"
 /* Подключение идентификатора сущности */
 #include "EntityId.h"
+/* Индекс клеток по позициям */
+#include "Grid.h"
 
 /* Подключение функциональных типов */
 #include <functional>
@@ -26,6 +28,15 @@ public:
     void addVelocity(EntityId entity, Velocity velocity);
     /* Получение направления движения сущности */
     Velocity* getVelocity(EntityId entity);
+
+    /* Пересобрать индекс клеток из компонентов Position (источник правды). */
+    void rebuildGridIndex();
+
+    /* Получение индекса клеток */
+    const Grid& grid() const noexcept 
+    { 
+        return grid_; 
+    }
 
     /*
     -template<typename... Fs> - шаблон функции, ...Fs означает, что функция может принимать переменное количество аргументов
@@ -60,5 +71,7 @@ private:
     std::unordered_map<EntityId, Position> positions_;
     /* Хранилище направлений движения сущностей */
     std::unordered_map<EntityId, Velocity> velocities_;
+    /* Индекс: клетка → список сущностей в ней */
+    Grid grid_;
 };
 
