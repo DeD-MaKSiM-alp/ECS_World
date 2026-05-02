@@ -1,0 +1,7 @@
+-xc++
+-std=c++17
+--target=x86_64-pc-windows-msvc
+-fms-compatibility
+-fms-extensions
+-fdelayed-template-parsing
+-IC:/IT/cursor_projects/ECS_Game/include
