@@ -22,6 +22,11 @@ public:
     /* Получение позиции сущности */
     Position* getPosition(EntityId entity);
 
+    /* Добавление направления движения к сущности */
+    void addVelocity(EntityId entity, Velocity velocity);
+    /* Получение направления движения сущности */
+    Velocity* getVelocity(EntityId entity);
+
     /*
     -template<typename... Fs> - шаблон функции, ...Fs означает, что функция может принимать переменное количество аргументов
     -void tick(Fs&&... systems) - функция tick, которая принимает переменное количество аргументов, в данном случае систем
@@ -53,5 +58,7 @@ private:
     std::uint32_t nextEntityValue_ = 1;
     /* Хранилище позиций сущностей */
     std::unordered_map<EntityId, Position> positions_;
+    /* Хранилище направлений движения сущностей */
+    std::unordered_map<EntityId, Velocity> velocities_;
 };
 

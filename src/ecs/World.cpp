@@ -35,3 +35,24 @@ Position* World::getPosition(EntityId entity)
     /* &it->second - возвращает указатель на значение позиции сущности */
     return &it->second;
 }
+
+/* Добавление направления движения к сущности */
+void World::addVelocity(EntityId entity, Velocity velocity)
+{
+    /* Добавление направления движения к сущности в хранилище направлений движения */
+    velocities_[entity] = velocity;
+}
+
+/* Получение направления движения сущности */
+Velocity* World::getVelocity(EntityId entity)
+{
+    /* Поиск направления движения сущности в хранилище направлений движения */
+    auto it = velocities_.find(entity);
+    /* Если направление движения не найдено, возвращается nullptr */
+    if (it == velocities_.end())
+    {
+        return nullptr;
+    }
+    /* Возвращение направления движения сущности */
+    return &it->second;
+}   
