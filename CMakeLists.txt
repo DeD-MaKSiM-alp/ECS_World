@@ -13,6 +13,7 @@ find_package(SFML 2.6 COMPONENTS graphics window system REQUIRED)
 
 add_executable(ecs_game
     main.cpp
+    src/SmokeTests.cpp
     src/ecs/World.cpp
     src/ecs/Systems.cpp
     src/ecs/SFMLRenderer.cpp
