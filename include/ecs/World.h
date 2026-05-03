@@ -1,59 +1,99 @@
-#pragma once /* Защита от двойного включения */
+#pragma once
 
-/* Подключение компонентов */
 #include "Components.h"
-/* Подключение идентификатора сущности */
 #include "EntityId.h"
-/* Индекс клеток по позициям */
 #include "Grid.h"
 
-/* Подключение функциональных типов */
 #include <functional>
 #include <unordered_map>
+#include <unordered_set>
 
-/* Центральное хранилище сущностей и компонентов; системы вызываются снаружи через tick(). */
+/*
+  Центральное хранилище сущностей и компонентов.
+  Системы вызываются снаружи через tick() в фиксированном порядке.
+  Единственная точка смены позиции — moveEntity().
+*/
 class World
 {
-/* Публичный интерфейс класса World */
 public:
-    /* Создание новой сущности */
+    /* --- Управление сущностями --- */
+
     EntityId createEntity();
 
-    /* Добавление позиции к сущности */
+    /*
+      Удаляет сущность из всех хранилищ и из индекса сетки.
+      Используется InteractionSystem при поедании еды.
+    */
+    void removeEntity(EntityId entity);
+
+    /* --- Position --- */
+
     void addPosition(EntityId entity, Position position);
-    /* Получение позиции сущности */
     Position* getPosition(EntityId entity);
 
-    /* Добавление направления движения к сущности */
+    /*
+      Единственная точка смены позиции.
+      Проверяет границы и наличие Blocking в целевой клетке.
+      Обновляет positions_ и grid_ инкрементально.
+      Возвращает true если перемещение выполнено.
+    */
+    bool moveEntity(EntityId entity, std::int32_t dx, std::int32_t dy);
+
+    /* --- Velocity (временный компонент-заглушка из коммита 1) --- */
+
     void addVelocity(EntityId entity, Velocity velocity);
-    /* Получение направления движения сущности */
     Velocity* getVelocity(EntityId entity);
 
-    /* Пересобрать индекс клеток из компонентов Position (источник правды). */
-    void rebuildGridIndex();
+    /* --- Hunger --- */
 
-    /* Получение индекса клеток */
-    const Grid& grid() const noexcept 
-    { 
-        return grid_; 
-    }
+    void addHunger(EntityId entity, Hunger hunger);
+    Hunger* getHunger(EntityId entity);
+    const Hunger* getHunger(EntityId entity) const;
+    void removeHunger(EntityId entity);
+    const std::unordered_map<EntityId, Hunger>& hungers() const { return hungers_; }
+
+    /* --- Food --- */
+
+    void addFood(EntityId entity);
+    bool hasFood(EntityId entity) const;
+    const std::unordered_set<EntityId>& foods() const { return foods_; }
+
+    /* --- Blocking --- */
+
+    void addBlocking(EntityId entity);
+    bool hasBlocking(EntityId entity) const;
+
+    /* --- MoveTarget --- */
+
+    void addMoveTarget(EntityId entity, MoveTarget target);
+    MoveTarget* getMoveTarget(EntityId entity);
+    void removeMoveTarget(EntityId entity);
+    const std::unordered_map<EntityId, MoveTarget>& moveTargets() const { return moveTargets_; }
+
+    /* --- InteractTarget --- */
+
+    void addInteractTarget(EntityId entity, InteractTarget target);
+    InteractTarget* getInteractTarget(EntityId entity);
+    void removeInteractTarget(EntityId entity);
+    const std::unordered_map<EntityId, InteractTarget>& interactTargets() const { return interactTargets_; }
+
+    /* --- PlayerControlled --- */
+
+    void addPlayerControlled(EntityId entity);
+    bool hasPlayerControlled(EntityId entity) const;
+
+    /* --- Grid index --- */
+
+    /* Пересобрать индекс клеток из positions_ (полная пересборка; используется редко). */
+    void rebuildGridIndex();
+    const Grid& grid() const noexcept { return grid_; }
+
+    /* --- tick --- */
 
     /*
-    -template<typename... Fs> - шаблон функции, ...Fs означает, что функция может принимать переменное количество аргументов
-    -void tick(Fs&&... systems) - функция tick, которая принимает переменное количество аргументов, в данном случае систем
-    -using expander = int[]; - создается псевдоним типа
-    -(void)expander - Создаётся временный массив int, но результат нам не нужен. Создается ради побочного эффекта - внутри
-    элементов массива выполняются вызовы функций, переданных в tick
-    -0 - технический трюк, нужен для того, чтобы массив был корректным, даже если нет систем, например, если:
-    world.tick(), то expander{0} - корректный массив
-    -std::invoke(...) - универсальный способ вызвать что-то вызываемое. Умеет вызывать функции, методы, функторы, лямбды и т.д.
-    -std::forward<Fs>(systems) - Это продвинутый механизм, который передаёт объект дальше “как он пришёл”.
-    Если система была временным объектом — передаёт как временный.
-    Если была обычной переменной — передаёт как обычную ссылку.
-    -std::ref(*this) - Это обёртка, которая говорит: передай World по ссылке. То есть система получит World&, а не копию World.
-    Это важно, потому что система должна менять текущий мир.
-    - , void(), 0 - Это оператор запятая. Он выполняет выражения слева направо и возвращает последнее. Почему вернуть 0? Потому что мы заполняем массив int.
-    Каждый элемент массива должен быть числом. Поэтому после вызова системы выражение возвращает 0.
+      Вызывает системы в переданном порядке.
+      Каждая система — функция/лямбда вида void(World&).
+      Порядок: Hunger → AI → Movement → Interaction.
     */
     template<typename... Fs>
     void tick(Fs&&... systems)
@@ -63,15 +103,18 @@ public:
             0,
             (std::invoke(std::forward<Fs>(systems), std::ref(*this)), void(), 0)...};
     }
-/* Приватные поля и методы */
+
 private:
-    /* Счетчик для создания новых сущностей */
     std::uint32_t nextEntityValue_ = 1;
-    /* Хранилище позиций сущностей */
-    std::unordered_map<EntityId, Position> positions_;
-    /* Хранилище направлений движения сущностей */
-    std::unordered_map<EntityId, Velocity> velocities_;
-    /* Индекс: клетка → список сущностей в ней */
+
+    std::unordered_map<EntityId, Position>      positions_;
+    std::unordered_map<EntityId, Velocity>      velocities_;
+    std::unordered_map<EntityId, Hunger>        hungers_;
+    std::unordered_set<EntityId>                foods_;
+    std::unordered_set<EntityId>                blockings_;
+    std::unordered_map<EntityId, MoveTarget>    moveTargets_;
+    std::unordered_map<EntityId, InteractTarget> interactTargets_;
+    std::unordered_set<EntityId>                playerControlleds_;
+
     Grid grid_;
 };
-

@@ -7,6 +7,8 @@ CompileFlags:
     - -fms-extensions
     - -fdelayed-template-parsing
     - -IC:/IT/cursor_projects/ECS_Game/include
+    # Должен совпадать с корнем SFML (рядом с SFML_DIR в CMakeLists.txt)
+    - -IC:/IT/cursor_projects/SFML-2.6.2/include
 
 Diagnostics:
   Suppress:

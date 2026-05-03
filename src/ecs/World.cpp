@@ -1,27 +1,39 @@
 #include "ecs/World.h"
 
-/* Реализация методов World */
+/* --- Управление сущностями --- */
 
-/* Создание новой сущности */       
 EntityId World::createEntity()
 {
-    /* 
-    Создание нового идентификатора сущности и значение счетчика увеличивается на 1, чтобы следующая сущность получила новый идентификатор
-    */
-    const EntityId id{nextEntityValue_++};
-
-    /* Возвращение нового идентификатора сущности */
-    return id;
+    return EntityId{nextEntityValue_++};
 }
 
 /*
-  Позиция сущности хранится в positions_ — это источник правды «где объект».
-  grid_ — вторичный индекс «в этой клетке какие id», чтобы не перебирать всех сущностей,
-  когда нужно узнать, кто стоит на клетке (еда, блок, бой и т.д.).
-  После записи позиции индекс должен совпадать с positions_; здесь проще всего
-  пересобрать его целиком (см. rebuildGridIndex).
-  Прямое изменение координат через getPosition() без вызова rebuildGridIndex рассинхронизирует индекс —
-  либо вызывайте rebuildGridIndex после таких правок, либо позже единый API движения (например moveEntity).
+  Удаляет сущность из всех хранилищ.
+  Сначала убирает из индекса сетки (если есть позиция), затем из каждого контейнера.
+*/
+void World::removeEntity(EntityId entity)
+{
+    auto posIt = positions_.find(entity);
+    if (posIt != positions_.end())
+    {
+        grid_.remove(posIt->second.x, posIt->second.y, entity);
+        positions_.erase(posIt);
+    }
+
+    velocities_.erase(entity);
+    hungers_.erase(entity);
+    foods_.erase(entity);
+    blockings_.erase(entity);
+    moveTargets_.erase(entity);
+    interactTargets_.erase(entity);
+    playerControlleds_.erase(entity);
+}
+
+/* --- Position --- */
+
+/*
+  Позиция сущности — источник правды «где объект».
+  grid_ — производный индекс; после записи позиции всегда пересобирается.
 */
 void World::addPosition(EntityId entity, Position position)
 {
@@ -29,11 +41,175 @@ void World::addPosition(EntityId entity, Position position)
     rebuildGridIndex();
 }
 
+Position* World::getPosition(EntityId entity)
+{
+    auto it = positions_.find(entity);
+    if (it == positions_.end())
+        return nullptr;
+    return &it->second;
+}
+
 /*
-  Полная пересборка индекса клеток из текущих позиций:
-  1) clear — опустошить все списки в клетках, иначе останутся устаревшие id (объект уехал, удалён и т.п.);
-  2) один проход по positions_ — заново разложить каждую сущность в клетку по её (x, y).
-  Вне сетки [0, kWidth) × [0, kHeight) в индекс не кладём (границы мира обработает позже отдельным слоем).
+  Единственная точка смены позиции.
+  1) Проверить наличие позиции.
+  2) Посчитать новую клетку.
+  3) Проверить границы сетки.
+  4) Проверить отсутствие Blocking в целевой клетке.
+  5) Обновить индекс инкрементально (remove + add).
+  6) Сохранить новую позицию.
+*/
+bool World::moveEntity(EntityId entity, std::int32_t dx, std::int32_t dy)
+{
+    auto it = positions_.find(entity);
+    if (it == positions_.end())
+        return false;
+
+    const std::int32_t nx = it->second.x + dx;
+    const std::int32_t ny = it->second.y + dy;
+
+    if (!Grid::inBounds(nx, ny))
+        return false;
+
+    for (EntityId occupant : grid_.entitiesAt(nx, ny))
+    {
+        if (blockings_.count(occupant))
+            return false;
+    }
+
+    grid_.remove(it->second.x, it->second.y, entity);
+    grid_.add(nx, ny, entity);
+
+    it->second.x = nx;
+    it->second.y = ny;
+
+    return true;
+}
+
+/* --- Velocity --- */
+
+void World::addVelocity(EntityId entity, Velocity velocity)
+{
+    velocities_[entity] = velocity;
+}
+
+Velocity* World::getVelocity(EntityId entity)
+{
+    auto it = velocities_.find(entity);
+    if (it == velocities_.end())
+        return nullptr;
+    return &it->second;
+}
+
+/* --- Hunger --- */
+
+void World::addHunger(EntityId entity, Hunger hunger)
+{
+    hungers_[entity] = hunger;
+}
+
+Hunger* World::getHunger(EntityId entity)
+{
+    auto it = hungers_.find(entity);
+    if (it == hungers_.end())
+        return nullptr;
+    return &it->second;
+}
+
+const Hunger* World::getHunger(EntityId entity) const
+{
+    auto it = hungers_.find(entity);
+    if (it == hungers_.end())
+        return nullptr;
+    return &it->second;
+}
+
+void World::removeHunger(EntityId entity)
+{
+    hungers_.erase(entity);
+}
+
+/* --- Food --- */
+
+void World::addFood(EntityId entity)
+{
+    foods_.insert(entity);
+}
+
+bool World::hasFood(EntityId entity) const
+{
+    return foods_.count(entity) > 0;
+}
+
+/* --- Blocking --- */
+
+void World::addBlocking(EntityId entity)
+{
+    blockings_.insert(entity);
+}
+
+bool World::hasBlocking(EntityId entity) const
+{
+    return blockings_.count(entity) > 0;
+}
+
+/* --- MoveTarget --- */
+
+void World::addMoveTarget(EntityId entity, MoveTarget target)
+{
+    moveTargets_[entity] = target;
+}
+
+MoveTarget* World::getMoveTarget(EntityId entity)
+{
+    auto it = moveTargets_.find(entity);
+    if (it == moveTargets_.end())
+        return nullptr;
+    return &it->second;
+}
+
+void World::removeMoveTarget(EntityId entity)
+{
+    moveTargets_.erase(entity);
+}
+
+/* --- InteractTarget --- */
+
+void World::addInteractTarget(EntityId entity, InteractTarget target)
+{
+    interactTargets_[entity] = target;
+}
+
+InteractTarget* World::getInteractTarget(EntityId entity)
+{
+    auto it = interactTargets_.find(entity);
+    if (it == interactTargets_.end())
+        return nullptr;
+    return &it->second;
+}
+
+void World::removeInteractTarget(EntityId entity)
+{
+    interactTargets_.erase(entity);
+}
+
+/* --- PlayerControlled --- */
+
+void World::addPlayerControlled(EntityId entity)
+{
+    playerControlleds_.insert(entity);
+}
+
+bool World::hasPlayerControlled(EntityId entity) const
+{
+    return playerControlleds_.count(entity) > 0;
+}
+
+/* --- Grid index --- */
+
+/*
+  Полная пересборка: очистить все клетки, затем один проход по positions_.
+  Используется только после addPosition (при расстановке сцены).
+  В игровом цикле индекс обновляется инкрементально через moveEntity/removeEntity.
 */
 void World::rebuildGridIndex()
 {
@@ -45,39 +221,3 @@ void World::rebuildGridIndex()
             grid_.add(pos.x, pos.y, entry.first);
     }
 }
-
-/* Получение позиции сущности */
-Position* World::getPosition(EntityId entity)
-{
-    /* Поиск позиции сущности в хранилище позиций */
-    auto it = positions_.find(entity);
-    /* Если позиция не найдена, возвращается nullptr */
-    if (it == positions_.end())
-    {
-        return nullptr;
-    }
-    /* Возвращение позиции сущности */
-    /* &it->second - возвращает указатель на значение позиции сущности */
-    return &it->second;
-}
-
-/* Добавление направления движения к сущности */
-void World::addVelocity(EntityId entity, Velocity velocity)
-{
-    /* Добавление направления движения к сущности в хранилище направлений движения */
-    velocities_[entity] = velocity;
-}
-
-/* Получение направления движения сущности */
-Velocity* World::getVelocity(EntityId entity)
-{
-    /* Поиск направления движения сущности в хранилище направлений движения */
-    auto it = velocities_.find(entity);
-    /* Если направление движения не найдено, возвращается nullptr */
-    if (it == velocities_.end())
-    {
-        return nullptr;
-    }
-    /* Возвращение направления движения сущности */
-    return &it->second;
-}   
