@@ -90,6 +90,27 @@ bool testMoveEntity()
 }
 
 /* -----------------------------------------------------------------------
+   Тест: Walkable{false} делает клетку непроходимой
+   ----------------------------------------------------------------------- */
+bool testWalkable()
+{
+    World w;
+
+    const EntityId mover = w.createEntity();
+    w.addPosition(mover, Position{1, 1});
+
+    const EntityId rock = w.createEntity();
+    w.addPosition(rock, Position{2, 1});
+    w.addWalkable(rock, Walkable{false});
+
+    if (w.moveEntity(mover, 1, 0)) return false; /* клетка (2,1) непроходима */
+    Position* p = w.getPosition(mover);
+    if (!p || p->x != 1 || p->y != 1) return false;
+
+    return true;
+}
+
+/* -----------------------------------------------------------------------
    Тест коммита 5: HungerSystem — голод растёт каждый тик
    ----------------------------------------------------------------------- */
 bool testHungerSystem()
@@ -207,6 +228,7 @@ bool runSmokeTests(std::ostream& out, std::ostream& err)
 
     if (!check(testGridIndex(), "Grid index совпадает с Position", out, err)) return false;
     if (!check(testMoveEntity(), "moveEntity: движение, граница, блокировка", out, err)) return false;
+    if (!check(testWalkable(), "Walkable: непроходимая клетка блокирует шаг", out, err)) return false;
     if (!check(testHungerSystem(), "HungerSystem: голод растёт на 1 за тик", out, err)) return false;
     if (!check(testAiSystem(), "AISystem: MoveTarget и InteractTarget", out, err)) return false;
     if (!check(testMovementSystem(), "MovementSystem: шаг к MoveTarget", out, err)) return false;

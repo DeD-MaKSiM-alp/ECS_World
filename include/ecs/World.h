@@ -33,7 +33,7 @@ public:
 
     /*
       Единственная точка смены позиции.
-      Проверяет границы и наличие Blocking в целевой клетке.
+      Проверяет границы, проходимость клетки (Walkable) и наличие Blocking в целевой клетке.
       Обновляет positions_ и grid_ инкрементально.
       Возвращает true если перемещение выполнено.
     */
@@ -57,6 +57,13 @@ public:
     void addFood(EntityId entity);
     bool hasFood(EntityId entity) const;
     const std::unordered_set<EntityId>& foods() const { return foods_; }
+
+    /* --- Walkable --- */
+
+    void addWalkable(EntityId entity, Walkable walkable);
+    Walkable* getWalkable(EntityId entity);
+    const Walkable* getWalkable(EntityId entity) const;
+    bool isCellWalkable(std::int32_t x, std::int32_t y) const;
 
     /* --- Blocking --- */
 
@@ -111,6 +118,7 @@ private:
     std::unordered_map<EntityId, Velocity>      velocities_;
     std::unordered_map<EntityId, Hunger>        hungers_;
     std::unordered_set<EntityId>                foods_;
+    std::unordered_map<EntityId, Walkable>      walkables_;
     std::unordered_set<EntityId>                blockings_;
     std::unordered_map<EntityId, MoveTarget>    moveTargets_;
     std::unordered_map<EntityId, InteractTarget> interactTargets_;

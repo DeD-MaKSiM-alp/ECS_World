@@ -31,6 +31,7 @@ private:
 
     bool     paused_  = false;
     bool     running_ = true;
+    bool     started_ = false;
     EntityId playerId_{};
 
     /* Последнее намерение игрока до выполнения тика */

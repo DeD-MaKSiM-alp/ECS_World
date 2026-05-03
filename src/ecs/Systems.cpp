@@ -96,7 +96,12 @@ void aiSystem(World& w)
         }
 
         if (bestFood == EntityId::invalid())
+        {
+            /* Целей еды нет: не оставляем устаревшие намерения */
+            w.removeMoveTarget(npcId);
+            w.removeInteractTarget(npcId);
             continue;
+        }
 
         Position* foodPos = w.getPosition(bestFood);
 

@@ -23,6 +23,7 @@ void World::removeEntity(EntityId entity)
     velocities_.erase(entity);
     hungers_.erase(entity);
     foods_.erase(entity);
+    walkables_.erase(entity);
     blockings_.erase(entity);
     moveTargets_.erase(entity);
     interactTargets_.erase(entity);
@@ -54,9 +55,10 @@ Position* World::getPosition(EntityId entity)
   1) Проверить наличие позиции.
   2) Посчитать новую клетку.
   3) Проверить границы сетки.
-  4) Проверить отсутствие Blocking в целевой клетке.
-  5) Обновить индекс инкрементально (remove + add).
-  6) Сохранить новую позицию.
+  4) Проверить проходимость клетки через Walkable.
+  5) Проверить отсутствие Blocking в целевой клетке.
+  6) Обновить индекс инкрементально (remove + add).
+  7) Сохранить новую позицию.
 */
 bool World::moveEntity(EntityId entity, std::int32_t dx, std::int32_t dy)
 {
@@ -68,6 +70,9 @@ bool World::moveEntity(EntityId entity, std::int32_t dx, std::int32_t dy)
     const std::int32_t ny = it->second.y + dy;
 
     if (!Grid::inBounds(nx, ny))
+        return false;
+
+    if (!isCellWalkable(nx, ny))
         return false;
 
     for (EntityId occupant : grid_.entitiesAt(nx, ny))
@@ -138,6 +143,43 @@ void World::addFood(EntityId entity)
 bool World::hasFood(EntityId entity) const
 {
     return foods_.count(entity) > 0;
+}
+
+/* --- Walkable --- */
+
+void World::addWalkable(EntityId entity, Walkable walkable)
+{
+    walkables_[entity] = walkable;
+}
+
+Walkable* World::getWalkable(EntityId entity)
+{
+    auto it = walkables_.find(entity);
+    if (it == walkables_.end())
+        return nullptr;
+    return &it->second;
+}
+
+const Walkable* World::getWalkable(EntityId entity) const
+{
+    auto it = walkables_.find(entity);
+    if (it == walkables_.end())
+        return nullptr;
+    return &it->second;
+}
+
+bool World::isCellWalkable(std::int32_t x, std::int32_t y) const
+{
+    if (!Grid::inBounds(x, y))
+        return false;
+
+    for (EntityId occupant : grid_.entitiesAt(x, y))
+    {
+        auto it = walkables_.find(occupant);
+        if (it != walkables_.end() && !it->second.value)
+            return false;
+    }
+    return true;
 }
 
 /* --- Blocking --- */

@@ -74,6 +74,18 @@ void Game::handleEvent(const sf::Event& event)
     if (event.type != sf::Event::KeyPressed)
         return;
 
+    if (!started_)
+    {
+        if (event.key.code == sf::Keyboard::S)
+        {
+            started_ = true;
+            lastInputTime_ = Clock::now();
+            lastTickTime_ = Clock::now();
+            std::cout << "[СТАРТ] Симуляция запущена\n";
+        }
+        return;
+    }
+
     lastInputTime_ = Clock::now();
 
     switch (event.key.code)
@@ -123,6 +135,8 @@ void Game::run()
         std::cerr << "Шрифт не найден — символы не будут отображаться\n";
 
     setupScene();
+    renderer_.render(world_, window_);
+    std::cout << "Нажмите S в окне игры, чтобы запустить симуляцию\n";
 
     while (window_.isOpen() && running_)
     {
@@ -134,7 +148,7 @@ void Game::run()
         if (!running_)
             break;
 
-        if (!paused_)
+        if (started_ && !paused_)
         {
             const auto now            = Clock::now();
             const auto sinceLastTick  = std::chrono::duration_cast<Ms>(now - lastTickTime_).count();
