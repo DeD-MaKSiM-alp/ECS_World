@@ -1,0 +1,10 @@
+^C:\IT\CURSOR_PROJECTS\ECS_WORLD\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/IT/cursor_projects/ECS_World -BC:/IT/cursor_projects/ECS_World/build-vs --check-stamp-file C:/IT/cursor_projects/ECS_World/build-vs/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

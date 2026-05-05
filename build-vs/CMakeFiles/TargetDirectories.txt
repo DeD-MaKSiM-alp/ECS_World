@@ -1,0 +1,3 @@
+C:/IT/cursor_projects/ECS_World/build-vs/CMakeFiles/ecs_game.dir
+C:/IT/cursor_projects/ECS_World/build-vs/CMakeFiles/ALL_BUILD.dir
+C:/IT/cursor_projects/ECS_World/build-vs/CMakeFiles/ZERO_CHECK.dir

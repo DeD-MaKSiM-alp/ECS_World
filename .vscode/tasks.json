@@ -2,13 +2,39 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build main.cpp (MSVC)",
+      "label": "CMake Configure (MSVC x64)",
       "type": "process",
-      "command": "${workspaceFolder}\\.vscode\\build_msvc.bat",
-      "args": [],
+      "command": "cmake",
+      "args": [
+        "-S",
+        "${workspaceFolder}",
+        "-B",
+        "${workspaceFolder}/build-vs",
+        "-G",
+        "Visual Studio 17 2022",
+        "-A",
+        "x64"
+      ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
+      "problemMatcher": []
+    },
+    {
+      "label": "Build (F5 Debug)",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "${workspaceFolder}/build-vs",
+        "--config",
+        "Debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "CMake Configure (MSVC x64)",
+      "dependsOrder": "sequence",
       "problemMatcher": [
         "$msCompile"
       ],
@@ -20,7 +46,7 @@
     {
       "label": "Clean build artifacts",
       "type": "shell",
-      "command": "del /f /q \"${workspaceFolder}\\main.exe\" \"${workspaceFolder}\\main.obj\" \"${workspaceFolder}\\main.pdb\" \"${workspaceFolder}\\main.ilk\" \"${workspaceFolder}\\vc140.pdb\" 2>nul",
+      "command": "if exist \"${workspaceFolder}\\build-vs\" rmdir /s /q \"${workspaceFolder}\\build-vs\"",
       "options": {
         "cwd": "${workspaceFolder}",
         "shell": {

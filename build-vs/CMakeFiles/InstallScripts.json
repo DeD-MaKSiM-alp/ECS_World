@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/IT/cursor_projects/ECS_World/build-vs/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
